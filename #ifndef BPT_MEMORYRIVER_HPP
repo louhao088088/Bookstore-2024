@@ -1,0 +1,82 @@
+#ifndef BPT_MEMORYRIVER_HPP
+#define BPT_MEMORYRIVER_HPP
+
+#include <fstream>
+#include <string>
+
+using std::string;
+using std::fstream;
+using std::ifstream;
+using std::ofstream;
+
+template<class T, int info_len = 2>
+class MemoryRiver {
+private:
+    fstream file;
+    string file_name;
+
+public:
+    MemoryRiver() = default;
+
+    MemoryRiver(const string& file_name) : file_name(file_name) {}
+
+    void initialise(string FN = "") {
+        if (FN != "") file_name = FN;
+        file.open(file_name, std::ios::out | std::ios::binary);
+        int tmp = 0;
+        for (int i = 0; i < info_len; ++i) {
+            file.write(reinterpret_cast<char*>(&tmp), sizeof(int));
+        }
+        file.close();
+    }
+
+    void get_info(int &tmp, int n) {
+        if (n > info_len) return;
+        file.open(file_name, std::ios::in | std::ios::binary);
+        if (!file.is_open()) return;
+        file.seekg((n - 1) * sizeof(int), std::ios::beg);
+        file.read(reinterpret_cast<char*>(&tmp), sizeof(int));
+        file.close();
+    }
+
+    void write_info(int tmp, int n) {
+        if (n > info_len) return;
+        file.open(file_name, std::ios::in | std::ios::out | std::ios::binary);
+        if (!file.is_open()) return;
+        file.seekp((n - 1) * sizeof(int), std::ios::beg);
+        file.write(reinterpret_cast<const char*>(&tmp), sizeof(int));
+        file.close();
+    }
+
+    int write(T &t) {
+        file.open(file_name, std::ios::in | std::ios::out | std::ios::binary);
+        if (!file.is_open()) return -1;
+        file.seekp(0, std::ios::end);
+        int index = file.tellp();
+        file.write(reinterpret_cast<const char*>(&t), sizeof(T));
+        file.close();
+        return index;
+    }
+
+    void update(T &t, const int index) {
+        file.open(file_name, std::ios::in | std::ios::out | std::ios::binary);
+        if (!file.is_open()) return;
+        file.seekp(index, std::ios::beg);
+        file.write(reinterpret_cast<const char*>(&t), sizeof(T));
+        file.close();
+    }
+
+    void read(T &t, const int index) {
+        file.open(file_name, std::ios::in | std::ios::binary);
+        if (!file.is_open()) return;
+        file.seekg(index, std::ios::beg);
+        file.read(reinterpret_cast<char*>(&t), sizeof(T));
+        file.close();
+    }
+
+    void Delete(int index) {
+        // 不涉及空间回收，无需实现
+    }
+};
+
+#endif //BPT_MEMORYRIVER_HPP
