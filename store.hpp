@@ -1,3 +1,6 @@
+#ifndef BPT_STORE_HPP
+#define BPT_STORE_HPP
+
 #include <cstdio>
 #include <cstring>
 #include <vector>
@@ -193,7 +196,7 @@ void process_delete(const char* index, int value) {
 }
 
 void process_find(const char* index) {
-    std::vector<int> values;
+    vector<int> values;
     unsigned long h = hash_str(index) % HASH_SIZE;
     HashBucket bucket;
     fseek(file, h * sizeof(HashBucket), SEEK_SET);
@@ -215,7 +218,7 @@ void process_find(const char* index) {
     if (values.empty()) {
         printf("null\n");
     } else {
-        std::sort(values.begin(), values.end());
+        sort(values.begin(), values.end());
         for (size_t i = 0; i < values.size(); ++i) {
             if (i > 0) printf(" ");
             printf("%d", values[i]);
