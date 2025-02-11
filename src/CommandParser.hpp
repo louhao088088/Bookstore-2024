@@ -1,18 +1,36 @@
 #pragma once
 #include "user.hpp"
-#include "book.hpp"
+#include "AsyncLogger.hpp"
+
 #include <bits/stdc++.h>
 using namespace std;
+int string_size(string s) {
+    int sum = 0;
+    string now;
+    for (char ch : s) {
+        if (ch == ' ') {
+            if (now != "") sum++;
+            now = "";
+        }
+        else now += ch;
+    }
+    if (now != "") sum++;
+    return sum;
+}
+// 指令解析器
+
 class CommandParser {
 public:
     static void parse(BookstoreSystem& system, const string& cmd) {
         istringstream iss(cmd);
+        int size = string_size(cmd);
+        //cout<<size<<endl;
         string operation;
         iss >> operation;
-
         try {
             if (operation == "su") {
                 string userID, password;
+                if(size!=2&&size!=3){throw runtime_error("words is not right");}
                 iss >> userID;
                 if (iss >> password) system.su(userID, password);
                 else system.su(userID);
@@ -20,31 +38,38 @@ public:
             else if (operation == "logout") system.logout();
             else if (operation == "register") {
                 string userID, password, username;
+                if(size!=4){throw runtime_error("words is not right");}
                 iss >> userID >> password >> username;
                 system.registerUser(userID, password, username);
             }
             else if (operation == "passwd") {
                 string userID, currentPassword, newPassword;
                 iss >> userID;
-                if (iss >> currentPassword >> newPassword) {
+                if(size!=3&&size!=4){throw runtime_error("words is not right");}
+                if (size > 3) {
+                    iss >>  currentPassword >> newPassword ;
                     system.changePassword(userID, newPassword, currentPassword);
                 } else {
                     iss >> newPassword;
+                    //cout<<newPassword<<endl;
                     system.changePassword(userID, newPassword);
                 }
             }
             else if (operation == "useradd") {
                 string userID, password, privilege, username;
+                if(size!=5){throw runtime_error("words is not right");}
                 iss >> userID >> password >> privilege >> username;
                 system.createUser(userID, password, stoi(privilege), username);
             }
             else if (operation == "delete") {
                 string userID;
+                if(size!=2){throw runtime_error("words is not right");}
                 iss >> userID;
                 system.deleteUser(userID);
             }
             else if (operation == "select") {
                 string ISBN;
+                if(size!=2){throw runtime_error("words is not right");}
                 iss >> ISBN;
                 system.selectBook(ISBN);
             }
@@ -54,8 +79,12 @@ public:
                 while (iss >> token) {
                     size_t eq = token.find('=');
                     if (eq == string::npos) throw runtime_error("Invalid format");
-                    string key = token.substr(0, eq);
-                    string value = token.substr(eq + 1);
+                    string key = token.substr(1, eq);
+                    string value;
+                    if(key=='ISBN'||key=='price'){
+                        value=token.substr(eq + 1);
+                    }
+                    else value=token.substr(eq + 2,token.size()-1);
                     modifications.emplace_back(key, value);
                 }
                 system.modifyBook(modifications);
@@ -63,12 +92,14 @@ public:
             else if (operation == "buy") {
                 string ISBN;
                 int quantity;
+                if(size!=3){throw runtime_error("words is not right");}
                 iss >> ISBN >> quantity;
                 system.purchaseBook(ISBN, quantity);
             }
             else if (operation == "import") {
                 int quantity;
                 double totalCost;
+                if(size!=3){throw runtime_error("words is not right");}
                 iss >> quantity >> totalCost;
                 system.importBooks(quantity, totalCost);
             }
@@ -81,14 +112,21 @@ public:
                     else system.showFinance();
                 }
                 else {
-                    string filterType, filterValue;
-                    iss >> filterType >> filterValue;
+                    size_t eq = token.find('=');
+                    if (eq == string::npos) throw runtime_error("Invalid format");
+                    string filterType = token.substr(1, eq);
+                    string value;
+                    if(filterType=='ISBN'||filterType=='price'){
+                        filtervalue=token.substr(eq + 1);
+                    }
+                    else filtervalue=token.substr(eq + 2,token.size()-1);
                     system.searchBooks(filterType, filterValue);
                 }
             }
             else if (operation == "report") {
                 string subcmd;
                 iss >> subcmd;
+                if(size!=2){throw runtime_error("words is not right");}
                 if (subcmd == "finance") system.generateFinanceReport();
                 else if (subcmd == "employee") system.generateEmployeeReport();
             }
@@ -102,7 +140,7 @@ public:
                 throw runtime_error("Unknown command");
             }
         } catch (const exception& e) {
-            cout<<"Invalid\n"<<" "<<e.what()<<endl;
+            cout<<"Invalid\n";
 
         }
     }

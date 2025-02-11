@@ -39,7 +39,6 @@ unsigned long long hash_str(const char* str) {
     }
     return hash;
 }
-
 void init_file() {
     file = fopen("data.dat", "rb+");
     if (!file) {
