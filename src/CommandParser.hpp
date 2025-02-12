@@ -79,12 +79,17 @@ public:
                 while (iss >> token) {
                     size_t eq = token.find('=');
                     if (eq == string::npos) throw runtime_error("Invalid format");
-                    string key = token.substr(1, eq);
+                    string key = token.substr(1, eq-1);
                     string value;
-                    if(key=='ISBN'||key=='price'){
+                    if(key=="ISBN"||key=="price"){
                         value=token.substr(eq + 1);
                     }
-                    else value=token.substr(eq + 2,token.size()-1);
+                    else {
+                        string tmp;
+                        tmp=token.substr(eq + 2);
+                        size_t endpos = tmp.find('"');
+                        value=tmp.substr(0,endpos-1);
+                    }
                     modifications.emplace_back(key, value);
                 }
                 system.modifyBook(modifications);
@@ -112,14 +117,19 @@ public:
                     else system.showFinance();
                 }
                 else {
-                    size_t eq = token.find('=');
+                    size_t eq = subcmd.find('=');
                     if (eq == string::npos) throw runtime_error("Invalid format");
-                    string filterType = token.substr(1, eq);
-                    string value;
-                    if(filterType=='ISBN'||filterType=='price'){
-                        filtervalue=token.substr(eq + 1);
+                    string filterType = subcmd.substr(1, eq-1);
+                    string filterValue;
+                    if(filterType=="ISBN"||filterType=="price"){
+                        filterValue=subcmd.substr(eq + 1);
                     }
-                    else filtervalue=token.substr(eq + 2,token.size()-1);
+                    else {
+                        string tmp;
+                        tmp=subcmd.substr(eq + 2);
+                        size_t endpos = tmp.find('"');
+                        filterValue=tmp.substr(0,endpos-1);
+                    }
                     system.searchBooks(filterType, filterValue);
                 }
             }

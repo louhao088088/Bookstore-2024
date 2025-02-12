@@ -41,38 +41,6 @@ struct Book {
     }
 };
 
-
-bool matchFilter(Book current, const string &filterType, const string &filterValue){
-    if (field == "ISBN") {
-        if(strcmp(current.ISBN,filterValue.c_str()))return 1;
-        else return 0;
-    }
-    else if (field == "name"){
-        if(strcmp(current.name,filterValue.c_str()))return 1;
-        else return 0;
-    }
-    else if (field == "author"){
-        if(strcmp(current.author,filterValue.c_str()))return 1;
-        else return 0;
-    }
-    else if (field == "price"){
-        double price = convert_double(filterValue);
-        if(fabs(price-filed)<1e-5)return 1;
-        return 0;
-    }
-    else if (field == "keyword"){
-        vector<string>Key = string_split(filterValue);
-        if(Key.size()>1){
-            throw runtime_error("More Key words");
-        }
-        vector<string>Keys = string_split(current.keywords);
-        for 
-
-    }
-            
-    return 0;
-}
-
 vector<string> string_split(string s) {
     vector<string>tmp;
     string now;
@@ -92,12 +60,47 @@ double convert_double(string s){
     int F = 0;
      for (char ch : s) {
         if(ch == '.'){F=1;continue;}
-        if(!F) sum = sum * 10 + s-'0';
-        else if(F==1) sum = sum + 1.0* (s-'0') / 10, F++;
-        else sum = sum + 1.0* (s-'0') / 100, F++;
+        if(!F) sum = sum * 10 + ch-'0';
+        else if(F==1) sum = sum + 1.0* (ch-'0') / 10, F++;
+        else sum = sum + 1.0* (ch-'0') / 100, F++;
     }
     return sum;
 }
+
+bool matchFilter(Book current, const string &filterType, const string &filterValue){
+    if (filterType == "ISBN") {
+        if(strcmp(current.ISBN,filterValue.c_str()))return 1;
+        else return 0;
+    }
+    else if (filterType == "name"){
+        if(strcmp(current.name,filterValue.c_str()))return 1;
+        else return 0;
+    }
+    else if (filterType == "author"){
+        if(strcmp(current.author,filterValue.c_str()))return 1;
+        else return 0;
+    }
+    else if (filterType == "price"){
+        double price = convert_double(filterValue);
+        if(fabs(price-current.price)<1e-5)return 1;
+        return 0;
+    }
+    else if (filterType == "keyword"){
+        vector<string>Key = string_split(filterValue);
+        if(Key.size()>1){
+            throw runtime_error("More Key words");
+        }
+        vector<string>Keys = string_split(current.keywords);
+        for(int i=0; i<Keys.size(); i++){
+            if(filterValue==Keys[i])return 1;
+        }
+        return 0;
+    }
+            
+    return 0;
+}
+
+
 class BookstoreSystem {
 private:
     vector<User> loginStack;
@@ -279,23 +282,23 @@ public:
         if (!hasSelected) throw runtime_error("No selected book");
         
         for (const auto& [field, value] : modifications) {
-            //cout<<field<<endl;
+            cout<<field<<endl;
             if (field == "ISBN") {
                 if (value == selectedBook.ISBN) 
                     throw runtime_error("Duplicate ISBN");
                 size_t oldHash = hashString(selectedBook.ISBN);
                 bookIndex.erase(oldHash);
                 strncpy(selectedBook.ISBN, value.c_str(), 20);
-                bookIndex[hashString(value)] = bookDB.write(selectedBook);
+                bookIndex[hashString(selectedBook.ISBN)] = bookDB.write(selectedBook);
             }
             
             else if (field == "name"){
                 strncpy(selectedBook.name, value.c_str(), 60);
-                bookIndex[hashString(value)] = bookDB.write(selectedBook);
+                bookIndex[hashString(selectedBook.ISBN)] = bookDB.write(selectedBook);
             }
             else if (field == "author"){
                 strncpy(selectedBook.author, value.c_str(), 60);
-                bookIndex[hashString(value)] = bookDB.write(selectedBook);
+                bookIndex[hashString(selectedBook.ISBN)] = bookDB.write(selectedBook);
             }
             else if (field == "keyword"){
                 vector<string>Key = string_split(value);
@@ -305,14 +308,18 @@ public:
                             throw runtime_error("Duplicate keyword");
                         }
                     }
-                strncpy(selectedBook.keyword, value.c_str(), 60);
-                bookIndex[hashString(value)] = bookDB.write(selectedBook);
+                strncpy(selectedBook.keywords, value.c_str(), 60);
+                bookIndex[hashString(selectedBook.ISBN)] = bookDB.write(selectedBook);
             }
             else if (field == "price"){
                 selectedBook.price = convert_double(value);
-                bookIndex[hashString(value)] = bookDB.write(selectedBook);
+                bookIndex[hashString(selectedBook.ISBN)] = bookDB.write(selectedBook);
             }
         }
+        cout << selectedBook.ISBN << "\t" << selectedBook.name << "\t"
+                 << selectedBook.author << "\t" << selectedBook.keywords << "\t"
+                 << fixed << setprecision(2) << selectedBook.price << "\t"
+                 << selectedBook.quantity << endl;
         logOperation("MODIFY");
     }
 
@@ -370,7 +377,7 @@ public:
         sort(results.begin(), results.end(), [](const Book& a, const Book& b) {
             return strcmp(a.ISBN, b.ISBN) < 0;
         });
-
+        if(results.size()==0)cout<<endl;
         for (const auto& book : results) {
             cout << book.ISBN << "\t" << book.name << "\t"
                  << book.author << "\t" << book.keywords << "\t"

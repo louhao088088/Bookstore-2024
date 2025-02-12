@@ -26,6 +26,7 @@ public:
         file.seekp(0, ios::end);
         long pos = file.tellp();
         file.write(reinterpret_cast<const char*>(&data), sizeof(T));
+        file.flush();
         return pos;
     }
 
@@ -37,6 +38,11 @@ public:
     void update(const T& data, long pos) {
         file.seekp(pos);
         file.write(reinterpret_cast<const char*>(&data), sizeof(T));
+        file.flush();
+    }
+
+    bool is_new_file() {
+        file.seekg(0, ios::end);
+        return file.tellg() == 0;
     }
 };
-
