@@ -10,5 +10,8 @@ add_executable(code
     src/initialization.hpp
     src/MemoryRiver.hpp
     src/database.hpp
-    store.cpp
+    src/user.hpp
+    src/CommandParser.hpp
+    src/AsyncLogger.hpp
+    code.cpp
 )
