@@ -193,22 +193,26 @@ public:
     void changePassword(const string& userID, 
                        const string& newPassword, 
                        const string& currentPassword = "") {
+        User& current = loginStack.back();
+        if (current.privilege != ROOT && currentPassword.empty())
+            throw runtime_error("Need current password");
         //cout<<newPassword<<endl;
         //cout<<"FFF\n";
         if (!userDB.check(userID.c_str()))
             throw runtime_error("User not found");
         
         User target=userDB.find(userID.c_str());
-        userDB.erase(userID.c_str());
+        
         //cout<<target.password<<" "<<currentPassword<<endl;;
-        if (target.privilege != ROOT && 
+        if (current.privilege != ROOT && 
             strcmp(target.password, currentPassword.c_str()) != 0)
             throw runtime_error("Wrong password");
 
+            
+        userDB.erase(userID.c_str());
         strncpy(target.password, newPassword.c_str(), 30);
         userDB.insert(userID.c_str(),target);
-        //userDB.read(target, userIndex[hashKey]);
-        //cout<<newPassword<<endl;
+    
         logOperation("PASSWD " + userID);
     }
 

@@ -150,7 +150,7 @@ public:
                 throw runtime_error("Unknown command");
             }
         } catch (const exception& e) {
-            cout<<"Invalid\n";
+            cout<<"Invalids\n";
 
         }
     }
