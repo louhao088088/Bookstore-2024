@@ -16,32 +16,13 @@
 
 using namespace std;
 
-
-
-// 文件存储管理器模板
-
-
-
-// 异步日志系统
-
-
-
-
-// 核心系统类
-
-
-
-
-
-
-
 int main() {
     BookstoreSystem system;
     string line;
     int UUU=0;
     while (getline(cin, line)) {
         UUU++;
-        cout<<UUU<<endl;
+        //cout<<UUU<<endl;
         if (line.empty()) continue;
         CommandParser::parse(system, line);
     }

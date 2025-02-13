@@ -1,6 +1,6 @@
 #pragma once
 #include <fstream>
-#include "initialization.hpp"
+#include "Initialization.hpp"
 using namespace std;
 template<typename T>
 class MemoryRiver {

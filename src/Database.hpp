@@ -72,8 +72,7 @@ public:
         while (current_offset != 0) {
             blockRiver.read(block, current_offset);
             for (int i = 0; i < block.header.count; ++i) {
-                if (strcmp(block.records[i].index, index) == 0 && 
-                    block.records[i].value == value) {
+                if (strcmp(block.records[i].index, index) == 0) {
                     exists = true;
                     break;
                 }
@@ -124,7 +123,7 @@ public:
         }
     }
 
-    void remove(const char* index, T value) {
+    void erase(const char* index) {
         unsigned long h = hash_str(index) % HASH_SIZE;
         HashBucket bucket;
         hashRiver.read(bucket, h * sizeof(HashBucket));
@@ -133,12 +132,11 @@ public:
         long prev_offset = 0;
         bool found = false;
         Block<T> block;
-
+        
         while (current_offset != 0 && !found) {
             blockRiver.read(block, current_offset);
             for (int i = 0; i < block.header.count; ++i) {
-                if (strcmp(block.records[i].index, index) == 0 && 
-                    block.records[i].value == value) {
+                if (strcmp(block.records[i].index, index) == 0) {
                     
                     for (int j = i; j < block.header.count - 1; ++j) {
                         block.records[j] = block.records[j + 1];
@@ -173,8 +171,7 @@ public:
             }
         }
     }
-
-    void find(const char* index) {
+    bool check(const char* index) {
         vector<T> values;
         unsigned long h = hash_str(index) % HASH_SIZE;
         HashBucket bucket;
@@ -194,14 +191,29 @@ public:
         }
 
         if (values.empty()) {
-            printf("null\n");
-        } else {
-            sort(values.begin(), values.end());
-            for (size_t i = 0; i < values.size(); ++i) {
-                if (i > 0) printf(" ");
-                printf("%d", values[i]);
-            }
-            printf("\n");
+            return 0;
         }
+        return 1;
+    }
+
+    T find(const char* index){
+        vector<T> values;
+        unsigned long h = hash_str(index) % HASH_SIZE;
+        HashBucket bucket;
+        hashRiver.read(bucket, h * sizeof(HashBucket));
+
+        long current_offset = bucket.head;
+        Block<T> block;
+
+        while (current_offset != 0) {
+            blockRiver.read(block, current_offset);
+            for (int i = 0; i < block.header.count; ++i) {
+                if (strcmp(block.records[i].index, index) == 0) {
+                    values.push_back(block.records[i].value);
+                }
+            }
+            current_offset = block.header.next;
+        }
+        return values[0];
     }
 };

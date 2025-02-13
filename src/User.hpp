@@ -1,5 +1,6 @@
 #pragma once
 #include "MemoryRiver.hpp"
+#include "Database.hpp"
 #include "AsyncLogger.hpp"
 #include <bits/stdc++.h>
 using namespace std;
@@ -108,12 +109,8 @@ private:
     bool hasSelected = false;
 
     // 文件存储实例
-    MemoryRiver<User> userDB{USER_FILE};
-    MemoryRiver<Book> bookDB{BOOK_FILE};
-
-    // 哈希索引
-    unordered_map<size_t, int> userIndex;
-    unordered_map<size_t, int> bookIndex;
+    Database<User> userDB;
+    Database<Book> bookDB;
 
     // 异步日志
     AsyncLogger logger;
@@ -148,21 +145,17 @@ public:
         ifstream test(USER_FILE);
         if (test.fail() || test.peek() == ifstream::traits_type::eof()) {
             User root("root", "sjtu", "Administrator", ROOT);
-            int pos = userDB.write(root);
-            userIndex[hashString("root")] = pos;
+            userDB.insert("root",root);
         }
     }
 
     // 用户管理
     void su(const string& userID, const string& password = "") {
-        size_t hashKey = hashString(userID);
-        if (userIndex.find(hashKey) == userIndex.end()) {
+        if (!userDB.check(userID.c_str()) ) {
             throw runtime_error("User not found");
         }
 
-        User user;
-        userDB.read(user, userIndex[hashKey]);
-
+        User user=userDB.find(userID.c_str());
         //cout<<user.password<<" "<<password<<endl;
 
         if (!password.empty() && strcmp(user.password, password.c_str()) != 0) {
@@ -188,13 +181,11 @@ public:
         if (loginStack.back().privilege < GUEST) 
             throw runtime_error("Permission denied");
 
-        size_t hashKey = hashString(userID);
-        if (userIndex.find(hashKey) != userIndex.end()) 
+        if (userDB.check(userID.c_str()) ) 
             throw runtime_error("Duplicate userID");
 
         User newUser(userID, password, username, CUSTOMER);
-        int pos = userDB.write(newUser);
-        userIndex[hashKey] = pos;
+        userDB.insert(userID.c_str(),newUser);
 
         logOperation("REGISTER " + userID);
     }
@@ -202,25 +193,20 @@ public:
     void changePassword(const string& userID, 
                        const string& newPassword, 
                        const string& currentPassword = "") {
-        User& current = loginStack.back();
-        if (current.privilege != ROOT && currentPassword.empty())
-            throw runtime_error("Need current password");
         //cout<<newPassword<<endl;
         //cout<<"FFF\n";
-        size_t hashKey = hashString(userID);
-        if (userIndex.find(hashKey) == userIndex.end())
+        if (!userDB.check(userID.c_str()))
             throw runtime_error("User not found");
         
-        User target;
-        userDB.read(target, userIndex[hashKey]);
+        User target=userDB.find(userID.c_str());
+        userDB.erase(userID.c_str());
         //cout<<target.password<<" "<<currentPassword<<endl;;
-        if (current.privilege != ROOT && 
+        if (target.privilege != ROOT && 
             strcmp(target.password, currentPassword.c_str()) != 0)
             throw runtime_error("Wrong password");
 
         strncpy(target.password, newPassword.c_str(), 30);
-        target.password[30]='\0';
-        userDB.update(target, userIndex[hashKey]);
+        userDB.insert(userID.c_str(),target);
         //userDB.read(target, userIndex[hashKey]);
         //cout<<newPassword<<endl;
         logOperation("PASSWD " + userID);
@@ -233,13 +219,11 @@ public:
         if (loginStack.back().privilege <= privilege)
             throw runtime_error("Insufficient privilege");
 
-        size_t hashKey = hashString(userID);
-        if (userIndex.find(hashKey) != userIndex.end())
+        if (userDB.check(userID.c_str()))
             throw runtime_error("Duplicate userID");
 
         User newUser(userID, password, username, privilege);
-        int pos = userDB.write(newUser);
-        userIndex[hashKey] = pos;
+        userDB.insert(userID.c_str(),newUser);
 
         logOperation("USERADD " + userID);
     }
@@ -248,16 +232,14 @@ public:
         if (loginStack.back().privilege != ROOT)
             throw runtime_error("Permission denied");
 
-        size_t hashKey = hashString(userID);
-        if (userIndex.find(hashKey) == userIndex.end())
+        if (!userDB.check(userID.c_str()) )
             throw runtime_error("User not exist");
 
         for (const auto& u : loginStack) {
             if (strcmp(u.userID, userID.c_str()) == 0)
                 throw runtime_error("User is logged in");
         }
-
-        userIndex.erase(hashKey);
+        userDB.erase(userID.c_str());
         logOperation("DELETE " + userID);
     }
 
@@ -266,39 +248,33 @@ public:
         if (loginStack.back().privilege < STAFF) 
             throw runtime_error("Permission denied");
 
-        size_t hashKey = hashString(ISBN);
-        if (bookIndex.find(hashKey) != bookIndex.end()) {
-            bookDB.read(selectedBook, bookIndex[hashKey]);
-        } else {
-            selectedBook = Book(ISBN);
-            int pos = bookDB.write(selectedBook);
-            bookIndex[hashKey] = pos;
+        Book selectedBook;
+        if(!bookDB.check(ISBN.c_str())){
+            strncpy(selectedBook.ISBN, ISBN.c_str(), 20);
+            bookDB.insert(ISBN.c_str(),selectedBook);
         }
+        else selectedBook=bookDB.find(ISBN.c_str());
         hasSelected = true;
         logOperation("SELECT " + ISBN);
     }
 
     void modifyBook(const vector<pair<string, string>>& modifications) {
         if (!hasSelected) throw runtime_error("No selected book");
-        
+        bookDB.erase(selectedBook.ISBN);
         for (const auto& [field, value] : modifications) {
             cout<<field<<endl;
             if (field == "ISBN") {
                 if (value == selectedBook.ISBN) 
                     throw runtime_error("Duplicate ISBN");
-                size_t oldHash = hashString(selectedBook.ISBN);
-                bookIndex.erase(oldHash);
                 strncpy(selectedBook.ISBN, value.c_str(), 20);
-                bookIndex[hashString(selectedBook.ISBN)] = bookDB.write(selectedBook);
             }
             
             else if (field == "name"){
                 strncpy(selectedBook.name, value.c_str(), 60);
-                bookIndex[hashString(selectedBook.ISBN)] = bookDB.write(selectedBook);
             }
             else if (field == "author"){
                 strncpy(selectedBook.author, value.c_str(), 60);
-                bookIndex[hashString(selectedBook.ISBN)] = bookDB.write(selectedBook);
+                
             }
             else if (field == "keyword"){
                 vector<string>Key = string_split(value);
@@ -309,13 +285,12 @@ public:
                         }
                     }
                 strncpy(selectedBook.keywords, value.c_str(), 60);
-                bookIndex[hashString(selectedBook.ISBN)] = bookDB.write(selectedBook);
             }
             else if (field == "price"){
                 selectedBook.price = convert_double(value);
-                bookIndex[hashString(selectedBook.ISBN)] = bookDB.write(selectedBook);
             }
-        }
+            
+        }bookDB.insert(selectedBook.ISBN,selectedBook);
         cout << selectedBook.ISBN << "\t" << selectedBook.name << "\t"
                  << selectedBook.author << "\t" << selectedBook.keywords << "\t"
                  << fixed << setprecision(2) << selectedBook.price << "\t"
@@ -326,20 +301,20 @@ public:
     void purchaseBook(const string& ISBN, int quantity) {
         if (quantity <= 0) throw runtime_error("Invalid quantity");
 
-        size_t hashKey = hashString(ISBN);
-        if (bookIndex.find(hashKey) == bookIndex.end())
+        if (!bookDB.check(ISBN.c_str()))
             throw runtime_error("Book not found");
         
-        Book target;
-        bookDB.read(target, bookIndex[hashKey]);
+        Book target=bookDB.find(ISBN.c_str());
 
         if (target.quantity < quantity)
             throw runtime_error("Insufficient stock");
 
         target.quantity -= quantity;
-        bookDB.update(target, bookIndex[hashKey]);
+        bookDB.erase(ISBN.c_str());
 
         double total = target.price * quantity;
+        bookDB.insert(ISBN.c_str(),target);
+
         logFinance(total, true);
 
         cout << fixed << setprecision(2) << total << endl;
@@ -350,11 +325,10 @@ public:
         if (!hasSelected) throw runtime_error("No selected book");
         if (quantity <= 0 || totalCost <= 0)
             throw runtime_error("Invalid parameters");
-
+        bookDB.erase(selectedBook.ISBN);
         selectedBook.quantity += quantity;
-        int pos = bookIndex[hashString(selectedBook.ISBN)];
-        bookDB.update(selectedBook, pos);
-
+        bookDB.insert(selectedBook.ISBN,selectedBook);
+        
         logFinance(totalCost, false);
         logOperation("IMPORT " + to_string(quantity));
     }
@@ -366,7 +340,7 @@ public:
         int pos = 0;
         while (pos != -1) {
             Book current;
-            bookDB.read(current, pos);
+            
             
             if (matchFilter(current, filterType, filterValue)) {
                 results.push_back(current);
