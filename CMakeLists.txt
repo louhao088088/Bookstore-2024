@@ -7,10 +7,10 @@ add_compile_options(-Wall)
 add_compile_options(-Ofast)
 
 add_executable(code 
-    src/initialization.hpp
+    src/Initialization.hpp
     src/MemoryRiver.hpp
-    src/database.hpp
-    src/user.hpp
+    src/Database.hpp
+    src/User.hpp
     src/CommandParser.hpp
     src/AsyncLogger.hpp
     code.cpp
