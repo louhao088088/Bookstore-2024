@@ -173,8 +173,9 @@ public:
 
             throw runtime_error("Invalid password");
         }
-
-        if (loginStack.empty() || loginStack.back().privilege <= user.privilege) {
+        if (!password.empty() || (!loginStack.empty()
+            &&loginStack.back().privilege > user.privilege)) 
+        {
             loginStack.push_back(user);
             logOperation("SU " + userID);
         } else {
