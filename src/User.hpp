@@ -184,14 +184,13 @@ public:
 
     void logout() {
         if (loginStack.empty()) throw runtime_error("No login user");
+        hasSelected = false;
         logOperation("LOGOUT");
         loginStack.pop_back();
     }
 
 
     void registerUser(const string& userID, const string& password, const string& username) {
-        if (loginStack.back().privilege < GUEST) 
-            throw runtime_error("Permission denied");
 
         if (userDB.check(userID.c_str()) ) 
             throw runtime_error("Duplicate userID");
@@ -206,6 +205,9 @@ public:
                        const string& newPassword, 
                        const string& currentPassword = "") {
         User& current = loginStack.back();
+        if(loginStack.empty())
+            throw runtime_error("Permission denied");
+
         if (current.privilege != ROOT && currentPassword.empty())
             throw runtime_error("Need current password");
         //cout<<newPassword<<endl;
@@ -232,7 +234,7 @@ public:
                    const string& password, 
                    int privilege,
                    const string& username) {
-        if (loginStack.back().privilege <= privilege)
+        if (loginStack.empty()||loginStack.back().privilege <= privilege)
             throw runtime_error("Insufficient privilege");
 
         if (userDB.check(userID.c_str()))
@@ -245,7 +247,7 @@ public:
     }
 
     void deleteUser(const string& userID) {
-        if (loginStack.back().privilege != ROOT)
+        if (loginStack.empty()||loginStack.back().privilege != ROOT)
             throw runtime_error("Permission denied");
 
         if (!userDB.check(userID.c_str()) )
@@ -265,7 +267,7 @@ public:
 
 
     void selectBook(const string& ISBN) {
-        if (loginStack.back().privilege < STAFF) 
+        if (loginStack.empty()||loginStack.back().privilege < STAFF) 
             throw runtime_error("Permission denied");
         Book newbook;
         
@@ -283,14 +285,15 @@ public:
 
     void modifyBook(const vector<pair<string, string>>& modifications) {
         if (!hasSelected) throw runtime_error("No selected book");
-        bookDB.erase(selectedBook.ISBN);
+        string tmp=selectedBook.ISBN;
         //vector<Book> all=bookDB.getall();
 
         for (const auto& [field, value] : modifications) {
             //cout<<field<<endl;
             if (field == "ISBN") {
-                if (value == selectedBook.ISBN) 
+                if(bookDB.check(value.c_str()))
                     throw runtime_error("Duplicate ISBN");
+                
                 strncpy(selectedBook.ISBN, value.c_str(), 20);
             }
             
@@ -315,12 +318,19 @@ public:
                 selectedBook.price = convert_double(value);
             }
             
-        }bookDB.insert(selectedBook.ISBN,selectedBook);
+        }
+        
+        bookDB.erase(tmp.c_str());
+        bookDB.insert(selectedBook.ISBN,selectedBook);
         //selectedBook.show();
         logOperation("MODIFY");
     }
 
     void purchaseBook(const string& ISBN, int quantity) {
+
+        if (loginStack.empty()) 
+            throw runtime_error("Permission denied");
+
         if (quantity <= 0) throw runtime_error("Invalid quantity");
 
         if (!bookDB.check(ISBN.c_str()))
@@ -357,6 +367,9 @@ public:
 
 
     void searchBooks(const string& filterType, const string& filterValue) {
+        if (loginStack.empty()) 
+            throw runtime_error("Permission denied");
+
         vector<Book> results,all=bookDB.getall();
 
         for(int i=0;i<all.size();i++){
@@ -377,6 +390,10 @@ public:
     }
 
     void showall() {
+
+        if (loginStack.empty()) 
+            throw runtime_error("Permission denied");
+
         vector<Book> results=bookDB.getall();
 
 

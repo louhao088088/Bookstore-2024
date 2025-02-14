@@ -1,38 +1,40 @@
 su root sjtu
-useradd worker worker_password 3 Liu,TaylorandStewart
-select 9787544287722
-modify -name="Phillips,HallandWelch" -keyword="KlinePLC|GoldenInc" -author="SantiagoPLC" -price=45.00
-select 9787559410443
-modify -name="GonzalesLLC" -keyword="KlinePLC|SuttonPLC" -author="HunterLtd" -price=38
-logout
-su worker worker_password
-select 9787559410443
+modify -name="Cortez,OliverandBall"
 import 48 233.33
 select 9787544287722
-import 15 150
-logout
-register user0 user0_password Dalton-Schwartz
-su user0 user0_password 
-buy 9787559410443 5 
-buy 9787544287722 3
-logout
-su worker worker_password 
-buy 9787559410443 20
-select 9787559410443
-import 20 200
+modify -ISBN=9787544287723
 select 9787544287722
-import 3 30
-buy 9787544287722 5
+modify -ISBN=9787544287723
+select 9787544287723
+modify -name="Cortez,OliverandBall" -keyword="Pittman,TaylorandMartinez|McclureGroup" -author="White,MoralesandHanson"
+import 48 233.33
 logout
-su root sjtu 
-buy 9787544287722 1
-select 9787544287722
-import 20 200.00
+show -ISBN=9787544287722
+show -ISBN=9787544287723
+register user0 user0_password RussellGroup
+su user0 user0_password
+show -ISBN=9787544287723
+buy 9787544287723 0
+logout
+su root sjtu
 show finance
-show finance 1
-show finance 3
-show finance 5
-show finance 10
-show
+select 9787544287723
+modify -price=45.00
+logout
+su user0 user0_password
+buy 9787544287723 24
+buy 9787544287723 25
+logout
+su root sjtu
+select 9787544287723
+modify -price=40.00
+import 1 10
+logout
+su user0 user0_password
+show -ISBN=9787544287723
+buy 9787544287723 25
+logout
+su root sjtu
+show finance
 logout
 exit
