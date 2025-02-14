@@ -185,7 +185,6 @@ public:
 
     void logout() {
         if (loginStack.empty()) throw runtime_error("No login user");
-        hasSelected = false;
         logOperation("LOGOUT");
         loginStack.pop_back();
     }
