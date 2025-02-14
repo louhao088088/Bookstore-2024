@@ -34,7 +34,7 @@ struct Book {
     char keywords[61] = {0};
     double price = 0.0;
     int quantity = 0;
-    int next = -1;
+    int flag = 0;
 
     Book() = default;
     explicit Book(const string& isbn) {
@@ -115,6 +115,7 @@ private:
     vector<User> loginStack;
     Book selectedBook;
     bool hasSelected = false;
+    vector<Book>selected;
 
     // 文件存储实例
 
@@ -180,6 +181,9 @@ public:
             &&loginStack.back().privilege > user.privilege)) 
         {
             loginStack.push_back(user);
+            Book emptybook;emptybook.flag=1;
+            selected.push_back(emptybook);
+            hasSelected=0;
             logOperation("SU " + userID);
         } else {
             throw runtime_error("Permission denied");
@@ -190,7 +194,15 @@ public:
         if (loginStack.empty()) throw runtime_error("No login user");
         logOperation("LOGOUT");
         loginStack.pop_back();
-        if (loginStack.empty())hasSelected = false;
+        selected.pop_back();
+        
+        if (loginStack.empty()) hasSelected = false;
+        else {
+            selectedBook = selected.back();
+            if(selectedBook.flag) hasSelected = false;
+            else hasSelected = true;
+        }
+        
     }
 
 
@@ -220,7 +232,6 @@ public:
             throw runtime_error("User not found");
         
         User target=userDB.find(userID.c_str());
-        
         //cout<<target.password<<" "<<currentPassword<<endl;;
         if (current.privilege != ROOT && 
             strcmp(target.password, currentPassword.c_str()) != 0)
@@ -284,6 +295,8 @@ public:
 
        // selectedBook.show();
         hasSelected = true;
+        selected.pop_back();
+        selected.push_back(selectedBook);
         logOperation("SELECT " + ISBN);
     }
 
@@ -341,6 +354,8 @@ public:
             throw runtime_error("Book not found");
         
         Book target=bookDB.find(ISBN.c_str());
+        //target.show();
+
 
         if (target.quantity < quantity)
             throw runtime_error("Insufficient stock");
@@ -359,6 +374,10 @@ public:
 
     void importBooks(int quantity, double totalCost) {
         if (!hasSelected) throw runtime_error("No selected book");
+
+        if (loginStack.empty()||loginStack.back().privilege<3) 
+            throw runtime_error("Permission denied");
+
         if (quantity <= 0 || totalCost <= 0)
             throw runtime_error("Invalid parameters");
         bookDB.erase(selectedBook.ISBN);
