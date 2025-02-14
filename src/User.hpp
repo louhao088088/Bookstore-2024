@@ -154,9 +154,12 @@ public:
     }
 
     void initializeSystem() {
+        hasSelected = false;
+        if(!userDB.check("root")){
+            User root("root", "sjtu", "Administrator", ROOT);
+            userDB.insert("root",root);
+        }
         
-        User root("root", "sjtu", "Administrator", ROOT);
-        userDB.insert("root",root);
         
     }
 
@@ -185,9 +188,9 @@ public:
 
     void logout() {
         if (loginStack.empty()) throw runtime_error("No login user");
-        hasSelected = false;
         logOperation("LOGOUT");
         loginStack.pop_back();
+        if (loginStack.empty())hasSelected = false;
     }
 
 
