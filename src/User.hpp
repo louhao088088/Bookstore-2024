@@ -338,6 +338,11 @@ public:
         }
         
         bookDB.erase(tmp.c_str());
+        for(int i=0;i<selected.size();i++){
+            if(!strcmp(selected[i].ISBN,tmp.c_str())){
+                selected[i]=selectedBook;
+            }
+        }
         bookDB.insert(selectedBook.ISBN,selectedBook);
         //selectedBook.show();
         logOperation("MODIFY");
