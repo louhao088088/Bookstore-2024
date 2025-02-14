@@ -124,10 +124,10 @@ private:
 
     Database<Book> bookDB;
 
-    // 异步日志
+    // 日志
     AsyncLogger logger;
 
-    // 辅助函数
+    // Hash
     size_t hashString(const string& str) {
         return hash<string>{}(str);
     }
@@ -260,7 +260,8 @@ public:
     }
 
     // 图书管理
-    
+
+
 
 
     void selectBook(const string& ISBN) {
@@ -389,10 +390,6 @@ public:
     }
 
 
-
-
-
-    // 日志系统
     void showFinance(int count = -1) {
         if (loginStack.back().privilege != ROOT)
             throw runtime_error("Permission denied");
@@ -401,23 +398,33 @@ public:
         string line;
         double income = 0, outcome = 0;
         int cnt = 0;
-
-        while (getline(finance, line) && (count == -1 || cnt < count)) {
+        vector <double> tmp;
+        while (getline(finance, line) ) {
             istringstream iss(line);
             char sign;
             double amount;
             time_t timestamp;
             iss >> sign >> amount >> timestamp;
             
-            if (sign == '+') income += amount;
-            else outcome += amount;
+            if (sign == '+') tmp.push_back(amount);
+            else tmp.push_back(-amount);
             ++cnt;
         }
 
+        if(cnt < count) 
+            throw runtime_error("Too much counts");
+        
+        cnt = cnt - count;
+        if(count == -1) cnt = 0;
+        for(int i=tmp.size()-1;i>=cnt;i--)
+            if(tmp[i] < 0)outcome -= tmp[i];
+            else income += tmp[i];
         cout << fixed << setprecision(2)
              << "+ " << income << " - " << outcome << endl;
     }
 
+
+    // 日志系统
     void generateFinanceReport() {
         ifstream fin(FINANCE_LOG);
         string line;
