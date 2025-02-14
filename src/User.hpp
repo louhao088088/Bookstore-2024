@@ -33,7 +33,7 @@ struct Book {
     char author[61] = {0};
     char keywords[61] = {0};
     double price = 0.0;
-    int quantity = 0;
+    long long quantity = 0;
     int flag = 0;
 
     Book() = default;
@@ -302,6 +302,7 @@ public:
 
     void modifyBook(const vector<pair<string, string>>& modifications) {
         if (!hasSelected) throw runtime_error("No selected book");
+        selectedBook = selected.back();
         string tmp=selectedBook.ISBN;
         //vector<Book> all=bookDB.getall();
 
@@ -359,7 +360,7 @@ public:
             throw runtime_error("Book not found");
         
         Book target=bookDB.find(ISBN.c_str());
-        //target.show();
+       
 
 
         if (target.quantity < quantity)
@@ -370,6 +371,12 @@ public:
 
         double total = target.price * quantity;
         bookDB.insert(ISBN.c_str(),target);
+
+        for(int i=0;i<selected.size();i++){
+            if(!strcmp(selected[i].ISBN,target.ISBN)){
+                selected[i]=target;
+            }
+        }
 
         logFinance(total, true);
 
@@ -385,10 +392,21 @@ public:
 
         if (quantity <= 0 || totalCost <= 0)
             throw runtime_error("Invalid parameters");
+
+        //puts("AAA");
+        //cout<<quantity<<endl;
+        //selectedBook.show();
+
         bookDB.erase(selectedBook.ISBN);
         selectedBook.quantity += quantity;
+
         bookDB.insert(selectedBook.ISBN,selectedBook);
-        
+        for(int i=0;i<selected.size();i++){
+            if(!strcmp(selected[i].ISBN,selectedBook.ISBN)){
+                selected[i]=selectedBook;
+            }
+        }
+
         logFinance(totalCost, false);
         logOperation("IMPORT " + to_string(quantity));
     }
