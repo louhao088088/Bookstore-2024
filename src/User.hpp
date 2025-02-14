@@ -40,13 +40,19 @@ struct Book {
     explicit Book(const string& isbn) {
         strncpy(ISBN, isbn.c_str(), 20);
     }
+    void show(){
+        cout << ISBN << "\t" << name << "\t"
+            << author << "\t" << keywords << "\t"
+            << fixed << setprecision(2) << price << "\t"
+            << quantity << endl;
+    }
 };
 
 vector<string> string_split(string s) {
     vector<string>tmp;
     string now;
     for (char ch : s) {
-        if (ch == ' ') {
+        if (ch == '|') {
             if (now != "") tmp.push_back(now);
             now = "";
         }
@@ -70,15 +76,16 @@ double convert_double(string s){
 
 bool matchFilter(Book current, const string &filterType, const string &filterValue){
     if (filterType == "ISBN") {
-        if(strcmp(current.ISBN,filterValue.c_str()))return 1;
+        //puts("ISBN");
+        if(strcmp(current.ISBN,filterValue.c_str())==0)return 1;
         else return 0;
     }
     else if (filterType == "name"){
-        if(strcmp(current.name,filterValue.c_str()))return 1;
+        if(strcmp(current.name,filterValue.c_str())==0)return 1;
         else return 0;
     }
     else if (filterType == "author"){
-        if(strcmp(current.author,filterValue.c_str()))return 1;
+        if(strcmp(current.author,filterValue.c_str())==0)return 1;
         else return 0;
     }
     else if (filterType == "price"){
@@ -93,6 +100,7 @@ bool matchFilter(Book current, const string &filterType, const string &filterVal
         }
         vector<string>Keys = string_split(current.keywords);
         for(int i=0; i<Keys.size(); i++){
+            //cout<<Keys[i]<<endl;
             if(filterValue==Keys[i])return 1;
         }
         return 0;
@@ -109,7 +117,11 @@ private:
     bool hasSelected = false;
 
     // 文件存储实例
+
+
     Database<User> userDB;
+
+
     Database<Book> bookDB;
 
     // 异步日志
@@ -136,17 +148,16 @@ private:
     }
 
 public:
-    BookstoreSystem() {
+    BookstoreSystem(): userDB(USER_FILE),bookDB(BOOK_FILE){
+
         initializeSystem();
     }
 
     void initializeSystem() {
-        // 初始化root用户
-        ifstream test(USER_FILE);
-        if (test.fail() || test.peek() == ifstream::traits_type::eof()) {
-            User root("root", "sjtu", "Administrator", ROOT);
-            userDB.insert("root",root);
-        }
+        
+        User root("root", "sjtu", "Administrator", ROOT);
+        userDB.insert("root",root);
+        
     }
 
     // 用户管理
@@ -176,6 +187,7 @@ public:
         logOperation("LOGOUT");
         loginStack.pop_back();
     }
+
 
     void registerUser(const string& userID, const string& password, const string& username) {
         if (loginStack.back().privilege < GUEST) 
@@ -248,16 +260,22 @@ public:
     }
 
     // 图书管理
+    
+
+
     void selectBook(const string& ISBN) {
         if (loginStack.back().privilege < STAFF) 
             throw runtime_error("Permission denied");
-
-        Book selectedBook;
+        Book newbook;
+        
         if(!bookDB.check(ISBN.c_str())){
-            strncpy(selectedBook.ISBN, ISBN.c_str(), 20);
-            bookDB.insert(ISBN.c_str(),selectedBook);
+            strncpy(newbook.ISBN, ISBN.c_str(), 20);
+            bookDB.insert(ISBN.c_str(),newbook);
+            selectedBook = newbook;
         }
-        else selectedBook=bookDB.find(ISBN.c_str());
+        else selectedBook = bookDB.find(ISBN.c_str());
+
+       // selectedBook.show();
         hasSelected = true;
         logOperation("SELECT " + ISBN);
     }
@@ -265,8 +283,10 @@ public:
     void modifyBook(const vector<pair<string, string>>& modifications) {
         if (!hasSelected) throw runtime_error("No selected book");
         bookDB.erase(selectedBook.ISBN);
+        //vector<Book> all=bookDB.getall();
+
         for (const auto& [field, value] : modifications) {
-            cout<<field<<endl;
+            //cout<<field<<endl;
             if (field == "ISBN") {
                 if (value == selectedBook.ISBN) 
                     throw runtime_error("Duplicate ISBN");
@@ -295,10 +315,7 @@ public:
             }
             
         }bookDB.insert(selectedBook.ISBN,selectedBook);
-        cout << selectedBook.ISBN << "\t" << selectedBook.name << "\t"
-                 << selectedBook.author << "\t" << selectedBook.keywords << "\t"
-                 << fixed << setprecision(2) << selectedBook.price << "\t"
-                 << selectedBook.quantity << endl;
+        //selectedBook.show();
         logOperation("MODIFY");
     }
 
@@ -339,30 +356,41 @@ public:
 
 
     void searchBooks(const string& filterType, const string& filterValue) {
-        vector<Book> results;
+        vector<Book> results,all=bookDB.getall();
 
-        int pos = 0;
-        while (pos != -1) {
-            Book current;
-            
-            
-            if (matchFilter(current, filterType, filterValue)) {
-                results.push_back(current);
+        for(int i=0;i<all.size();i++){
+            //all[i].show();
+            if (matchFilter(all[i], filterType, filterValue)) {
+                results.push_back(all[i]);
+                //all[i].show();
             }
-            pos = current.next;
         }
 
         sort(results.begin(), results.end(), [](const Book& a, const Book& b) {
             return strcmp(a.ISBN, b.ISBN) < 0;
         });
         if(results.size()==0)cout<<endl;
-        for (const auto& book : results) {
-            cout << book.ISBN << "\t" << book.name << "\t"
-                 << book.author << "\t" << book.keywords << "\t"
-                 << fixed << setprecision(2) << book.price << "\t"
-                 << book.quantity << endl;
+        for (int i=0;i<results.size();i++) {
+            results[i].show();
         }
     }
+
+    void showall() {
+        vector<Book> results=bookDB.getall();
+
+
+        sort(results.begin(), results.end(), [](const Book& a, const Book& b) {
+            return strcmp(a.ISBN, b.ISBN) < 0;
+        });
+        if(results.size()==0)cout<<endl;
+        for (int i=0;i<results.size();i++) {
+            results[i].show();
+        }
+    }
+
+
+
+
 
     // 日志系统
     void showFinance(int count = -1) {

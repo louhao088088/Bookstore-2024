@@ -88,7 +88,7 @@ public:
                         string tmp;
                         tmp=token.substr(eq + 2);
                         size_t endpos = tmp.find('"');
-                        value=tmp.substr(0,endpos-1);
+                        value=tmp.substr(0,endpos);
                     }
                     modifications.emplace_back(key, value);
                 }
@@ -110,6 +110,10 @@ public:
             }
             else if (operation == "show") {
                 string subcmd;
+                if(size==1){
+                    system.showall();
+                    return;
+                }
                 iss >> subcmd;
                 if (subcmd == "finance") {
                     string count;
@@ -128,7 +132,7 @@ public:
                         string tmp;
                         tmp=subcmd.substr(eq + 2);
                         size_t endpos = tmp.find('"');
-                        filterValue=tmp.substr(0,endpos-1);
+                        filterValue=tmp.substr(0,endpos);
                     }
                     system.searchBooks(filterType, filterValue);
                 }

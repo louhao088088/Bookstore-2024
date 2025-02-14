@@ -51,7 +51,8 @@ private:
     }
 
 public:
-    Database() : hashRiver("data.dat"), blockRiver("data.dat") {
+    explicit Database(const string& filename) 
+        : hashRiver(filename), blockRiver(filename) {
         if (hashRiver.is_new_file()) {
             HashBucket init_bucket = {0, 0};
             for (int i = 0; i < HASH_SIZE; ++i) {
@@ -215,5 +216,30 @@ public:
             current_offset = block.header.next;
         }
         return values[0];
+    }
+
+    vector<T> getall(){
+        vector<T>tmp;
+        Block<T> block;
+        HashBucket bucket;
+    
+        for (int i = 0; i < HASH_SIZE; ++i) {
+
+            hashRiver.read(bucket, i * sizeof(HashBucket));
+            if (bucket.head == 0) continue;
+    
+            long current_offset = bucket.head;
+            while (current_offset != 0) {
+                blockRiver.read(block, current_offset);
+    
+                for (int j = 0; j < block.header.count; ++j) {
+                    tmp.push_back(block.records[j].value);
+                }
+
+                current_offset = block.header.next;
+            }
+        }
+
+        return tmp;
     }
 };
